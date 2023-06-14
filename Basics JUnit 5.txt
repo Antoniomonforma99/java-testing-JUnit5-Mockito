@@ -1,0 +1,32 @@
+Junit se base en Aserciones, las cuales consisten en comprobaciones mediante dos parametros o 3, siendo el primer argumento
+	el resultado esperado, el segundo la operacion y el tercero puede estar o no, es el mensaje.
+
+	Hay más tipos de aserciones, que comprueban que un valor no es Nulo, AssertTrue(), que comprueba si el resultado
+		es true o false y por ultimo el que explicamos arriba, assertEquals().
+
+
+Testeando Excepciones Controladas
+
+	En caso de que hagamos por una consulta al repositorio en busca de un recurso y le pasemos un id null, el sistema
+		nos lanza una excepcion de tipo IllegalArgumentException, podremos comprobar que esto funciona con el 
+		método assertThrows, el cual recibe el tipo de excepción esperada y una lambda con el código que haría saltar
+		la excepción:
+
+		when(repository.findOne(any())).thenThrow(new TipoException());
+		
+		assertThrows(TipoExcepction.class, () -> service.findOne(null));
+
+
+Imaginemos que tenemos diferente aserciones una debajo de otra, en caso de que en el Test una falle, el Test se para y las
+	siguientes ya no se ejecutarán, para solventar esto podremos hacer uso de assertAll(), este recibe un String y una serie
+	de lambdas las cuales serán las aserciones:
+
+	assertAll(
+		"Testing",
+		() -> assertNotNull(value),
+		() -> assertEquals(2, value)
+	);
+
+Con @DisplayName a nivel de método podemos darle nombre al Test y a nivel de clase a la clase padre de los Tests
+		
+	

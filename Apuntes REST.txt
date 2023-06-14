@@ -1,0 +1,102 @@
+USO DE MOCKITO Y JUNIT
+
+-Podemos modificar el comportamiento de un metodo para que por ejemplo, cuando en el Test se llame a findAll(), este 
+	devuelva algo controlado por nosotros, para esto haremos uso del método when de Mockito, p. ej:
+
+	List<Book> books = List.of(
+		new Book(1l, "Libro 1"),
+		new Book(2L, "Libro 2"),
+		new Book(3L, "Libro 3"),
+	);
+
+--->>   when(bookRepository.findAll()).thenReturn(books);
+
+
+
+TESTEO DE API REST
+
+-La anotación a nivel de clase @WebMvcTest nos permitira simular un cliente para poder testear el Controller
+	@WebMvcTest(BookController.class)
+
+-Inyectaremos con @Autowired un objeto MockMvc para lo que hemos indicado arriba
+	
+-Inyectaremos lo necesario (objectMapper etc)
+
+-Un controller suele tener asociado una dependencia a un Repositorio o un Servicio, para Mockear estos podremos
+	hacer uso de la anotación @MockBean
+
+-Podremos simular una llamada a un endpoint concreto del controlador con el método perform del mockMvc, podrá 
+	ser de tipo GET, POST, PUT etc
+
+	-Una vez relizada la petición podremos testear el comportamiento de la respuesta con el método .andExpect(), vease:
+
+	PETICION GET
+
+	*Como vemos vamos a testear el método del controlador findAll(), el cual devuelve un listado de Books,
+		podemos hacer uso de Mockito como hemos hecho arriba para que, el método del controlador nos devuelva
+		un listado de libros gestionado por nosotros, vease:
+
+	List<Book> books = List.of(
+		new Book(1l, "Libro 1"),
+		new Book(2L, "Libro 2"),
+		new Book(3L, "Libro 3"),
+	);
+
+   	when(bookRepository.findAll()).thenReturn(books);
+
+	
+	mockMvc.perform(
+			get("/api/books").contentType(MediaType.APPLICATION_JSON)   --->>> PARA INDICAR QUE LA RESPUESTA ES JSON
+		)
+		.andExpect(status.isOk())
+		.andExpect(jsonPath("$", hasSize(3)))  --->> con jsonPath podemos acceder al content usando $ para definirlo
+		.andExpect(jsonPath("$[1].name, is("Libro 2")));
+
+	*Como vemos tendriamos que ir comprobando todas las casuisticas del método, si en algun punto el status es distinto
+		tendríamos que cubrir esa casuistica, si por ejemplo el método Get findAll() no encuentra ningun libro
+		devuelve un status 404 not found, vease como tratarlo:
+
+	List<Book> books = List.of();
+	when(bookRepository.findAll()).thenReturn(books);
+
+	mockMvc.perform(
+		get("api/books").contentType(MediaType.APPLICATION_JSON)
+	)
+	.andExpect(status().isNotFound());
+		
+
+	**Cuando estemos testeando por ejemplo findById(), querremos comprobar en la casuistica de que todo es correcto
+		que el valor resultado no es nulo, eso lo hacemos con: .andExpect("$", notNullValue());
+
+
+	PETICION POST
+	
+	*Al hacer la peticion Get la cosa es bastante parecida, pero en este caso tendremos que simular el objeto que le 
+		pasamos al método y el que el método nos devuelve, la diferencia esque el que le mandamos tiene id null
+		y el que nos devuelve el método tiene un id asociado, para modificar el comportamiento del método save()
+		podemos hacer:
+		
+		Book book = new Book(null, "Libro 1");
+		Book bookDB = new Book(1L, "Libro 1);
+		when(bookRepository.save(any())).thenReturn(bookDB);
+
+		mockMvc.perform(
+			post("api/books")
+				.contentType(MediaType.APPLICATION_JSON)
+				.accept(MediaType.APPLICATION_JSON)     ---->>>> PARA PASARLE UN OBJETO JSON AL POST
+				.content(this.mapper.writeValueAsString(book))
+		)
+		.andExpect(status().isOk())
+		.andExpect(jsonPath("$", notNullValue()))
+		.andExpect(jsonPath("$.id", is(1)))
+		.andExpect(jsonPath("$.title", is("Libro 1")));
+
+
+	**Si en algun caso el método del controlador lanza una excepción, podremos comprobar que en dicha casuistica se lanza
+		dicha excepcion de esta manera:
+		.andExpect(result -> assertTrue(result.getResolvedException() instanceof tipoException));
+
+
+
+	Podremos extrapolar lo aprendido para tratar los métodos Put y Delete
+		

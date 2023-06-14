@@ -1,0 +1,74 @@
+Sirven para hacer de un doble de un objeto o algo que deseemos
+
+Cuando estemos desarrollando código es importante pensar que ese código luego va a ser testeado, asique por ejemplo 
+	la inyección de dependencias por constructor es la mejor manera, mejor que @Autowired.
+
+AL hacer una clase Test para testear por ejemplo un Servicio nos daremos cuenta de que tiene una dependecia con el 
+	repositorio así que podremos hacer un doble de este para no tener que instanciar uno de verdad, lo podremos hacer
+	de la siguiente manera:
+
+	**Haciendo uso de un método setUp anotado con @BeforeEach tendremos un método que se ejecutará antes de cada test
+		
+	Dentro de la clase:
+		
+		//dependencia
+		BookRepository repository;
+
+		//System Under Test
+		BookService service;
+
+		@BeforeEach
+		void setUp(){
+			this.repository = mock(BookRepository.class);
+			this.service = new BookService(repository);
+		}
+
+	Una vez hehco esto, podremos hacer uso de la lógica de Testing de JUnit, mediante aserciones, pero en un escenario
+		de tipo given, when, then
+
+		@Test
+		void findOneTest(){
+			//given
+			Book book1 = new Book (1L, "Libro 1");
+			when(repository.finOne(anyLong())).thenReturn(book1);
+
+			//when
+			Book book2 = service.findOne(1L);
+
+			//then
+			assertAll(
+				"Testing",
+				() -> assertNotNull(book2),
+				() -> assertEquals(1, book.getId())
+				() -> assertEquals("Libro 1", book.getTitle())
+			);
+		}
+
+Con el método verify() de Mockito podremos verificar por ejemplo para el test de arriba que en el mock (repositorio) se
+	llama al menos una vez al método findOne() :
+		
+	verify(repository, times(int)).findOne(any());   --->> findOne(any()), hace referencia a todas las llamadas a este método
+	verify(repositoty, atLeatOne(int)).findOne(1L);
+	verify(repository, never()).findAll();
+
+
+INYECCION DE DEPENDENCIAS
+	
+	Podemos instanciar los Mocks de diferentes maneras, como hemos visto arriba usando el metodo mock en el setUp(),
+		ahora veremos dos formas nuevas:
+		
+		1* 
+		Anotaremos la clase con @ExtendWith(MockitoExtension.class)
+		Anotaremos el Mock con @Mock private BookRepository repository;
+		Añadiremnos @InjectMocks donde hagamos uso del Mock (bookService)	
+		No necesitamos método setUp()
+	
+		2*
+		Anotaremos el Mock con @Mock private BookRepository repository;
+		Añadiremnos @InjectMocks donde hagamos uso del Mock (bookService)
+		En el método setUp() haremos uso de la siguiente implementacion:
+			MockitoAnnotations.openMocks(this);
+	
+
+
+		
